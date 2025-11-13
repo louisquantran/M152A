@@ -1,24 +1,4 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 11/04/2025 01:36:56 PM
-// Design Name: 
-// Module Name: seg_driver
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
-
 
 module seg_driver(
     input reset,
@@ -34,8 +14,8 @@ module seg_driver(
     output logic [7:0] segBits
 );
     logic [1:0] ctr = 2'b0;
-    
     logic clk_sevenseg_en;
+    
     always_ff @(posedge MegaClk) begin
         if (reset) begin
             clk_sevenseg_en <= 1'b0;
