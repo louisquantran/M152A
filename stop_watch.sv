@@ -57,7 +57,8 @@ module stop_watch(
     logic clk_1hz_en = 1'b0;
     logic clk_2hz_en = 1'b0;
     logic clk_blink_en = 1'b0;
-    
+    logic pause_en = 1'b0;
+
     always_ff @(posedge MegaClk) begin
         if (reset) begin
             digits[0] <= 4'b0;
@@ -67,7 +68,20 @@ module stop_watch(
             clk_1hz_en <= 1'b0;
             clk_2hz_en <= 1'b0;
             clk_blink_en <= 1'b0;
+            pause_en <= 1'b0;
         end else begin        
+            // slow clock for debouncer to set pause enable in order to avoid noise sensitivity 
+            if (clk_2hz && !clk_2hz_en) begin
+                clk_2hz_en <= 1'b1;
+                if (pause && !pause_en) begin
+                    pause_en <= 1'b1;
+                end else if (pause && pause_en) begin
+                    pause_en <= 1'b0;
+                end
+            end else if (!clk_2hz && clk_2hz_en) begin
+                clk_2hz_en <= 1'b0;
+            end
+            
             // Adjustment mode
             if (adj == 1) begin
                 if (clk_blink && !clk_blink_en) begin
@@ -78,7 +92,7 @@ module stop_watch(
                 if (clk_2hz && !clk_2hz_en) begin
                     clk_2hz_en <= 1'b1;
                     case (sel)
-                            // seconds adjustment
+                        // seconds adjustment
                         1'b0: begin
                             digits[0] <= digits[0] + 1;
                             // if ones digit reaches 10, increments tens digit and reset ones digit
@@ -112,36 +126,36 @@ module stop_watch(
                 end 
             end else begin
                 // Normal operation
-                if (clk_1hz && !clk_1hz_en) begin
-                    clk_1hz_en <= 1'b1;
-                    if (!pause) begin
-                        digits[0] <= digits[0] + 1;
-                        // when ones digit reaches 10, increments tens digit and reset
-                        if (digits[0] == 4'd9) begin
-                            digits[0] <= 4'b0;
-                            digits[1] <= digits[1] + 1;
-                            // if tens digit reaches 10, increments hundreds digit and reset tens digit
-                            if (digits[1] == 4'd5) begin
-                                digits[1] <= 4'b0;
-                                digits[2] <= digits[2] + 1;
-                                // if hundreds digit reaches 10, increments thousands digit and reset hundreds digit
-                                if (digits[2] == 4'd9) begin
-                                    digits[2] <= 4'b0;
-                                    digits[3] <= digits[3] + 1;
-                                    // if thousands digit reaches 10, reset everything since overflows
-                                    if (digits[3] == 4'd9) begin
-                                        digits[3] <= 4'b0;
+                if (!pause_en) begin
+                    if (clk_1hz && !clk_1hz_en) begin
+                        clk_1hz_en <= 1'b1;
+                            digits[0] <= digits[0] + 1;
+                            // when ones digit reaches 10, increments tens digit and reset
+                            if (digits[0] == 4'd9) begin
+                                digits[0] <= 4'b0;
+                                digits[1] <= digits[1] + 1;
+                                // if tens digit reaches 10, increments hundreds digit and reset tens digit
+                                if (digits[1] == 4'd5) begin
+                                    digits[1] <= 4'b0;
+                                    digits[2] <= digits[2] + 1;
+                                    // if hundreds digit reaches 10, increments thousands digit and reset hundreds digit
+                                    if (digits[2] == 4'd9) begin
                                         digits[2] <= 4'b0;
-                                        digits[1] <= 4'b0;
-                                        digits[0] <= 4'b0;
+                                        digits[3] <= digits[3] + 1;
+                                        // if thousands digit reaches 10, reset everything since overflows
+                                        if (digits[3] == 4'd9) begin
+                                            digits[3] <= 4'b0;
+                                            digits[2] <= 4'b0;
+                                            digits[1] <= 4'b0;
+                                            digits[0] <= 4'b0;
+                                        end
                                     end
                                 end
                             end
                         end
+                    else if (!clk_1hz && clk_1hz_en) begin
+                        clk_1hz_en <= 1'b0;
                     end
-                end
-                else if (!clk_1hz && clk_1hz_en) begin
-                    clk_1hz_en <= 1'b0;
                 end
             end
         end
